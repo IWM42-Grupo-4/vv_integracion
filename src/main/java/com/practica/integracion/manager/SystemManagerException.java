@@ -20,6 +20,4 @@ public class SystemManagerException extends Exception {
 		super(cause);
 	}
 
-	
-	
 }

@@ -41,7 +41,6 @@ public class SystemManager {
 		} catch (OperationNotSupportedException e) {
 			throw new SystemManagerException(e);
 		}
-
 	}
 
 	public void addRemoteSystem(String userId, Object remote) throws SystemManagerException {
