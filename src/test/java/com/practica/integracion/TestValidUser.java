@@ -4,18 +4,21 @@ import com.practica.integracion.DAO.AuthDAO;
 import com.practica.integracion.DAO.GenericDAO;
 import com.practica.integracion.DAO.User;
 import com.practica.integracion.manager.SystemManager;
+import com.practica.integracion.manager.SystemManagerException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
 
@@ -59,7 +62,7 @@ public class TestValidUser {
 		String validId = "12345"; // id valido de sistema
 		String invalidId = "123";
 		ArrayList<Object> lista = new ArrayList<>(Arrays.asList("uno", "dos"));
-		when(mockGenericDao.getSomeData(validUser, "where id=" + "1237")).thenReturn(lista);
+		when(mockGenericDao.getSomeData(validUser, "where id=" + validId)).thenReturn(lista);
 		// primero debe ejecutarse la llamada al dao de autenticación
 		// despues el de  acceso a datos del sistema (la validaciones del orden en cada prueba)
 		InOrder ordered = inOrder(mockAuthDao, mockGenericDao);
@@ -68,6 +71,7 @@ public class TestValidUser {
 		// llamada al api a probar
 		Collection<Object> retorno = manager.startRemoteSystem(validUser.getId(), invalidId);
 		assertEquals(retorno.toString(), "[uno, dos]");
+		//assertThrows(SystemManagerException.class, () ->retorno.toString());
 		// vemos si se ejecutan las llamadas a los dao, y en el orden correcto
 		ordered.verify(mockAuthDao).getAuthData(validUser.getId());
 		ordered.verify(mockGenericDao).getSomeData(validUser, "where id=" + validId);
@@ -124,6 +128,116 @@ public class TestValidUser {
 		// vemos si se ejecutan las llamadas a los dao, y en el orden correcto
 		ordered.verify(mockAuthDao).getAuthData(validUser.getId());
 		ordered.verify(mockGenericDao).getSomeData(validUser, "where id=" + validId);
+	}
+
+	@DisplayName("Test add usuario válido y añade correctamente")
+	@Test
+	public void testaddRemoteSystemWithValidUserAndSystem() throws Exception {
+		User validUser = new User("1","Ana","Lopez","Madrid", new ArrayList<Object>(Arrays.asList(1, 2)));
+		when(mockAuthDao.getAuthData(validUser.getId())).thenReturn(validUser);
+
+		String validId = "12345"; // id valido de sistema
+		ArrayList<Object> lista = new ArrayList<>(Arrays.asList("uno", "dos"));
+		when(mockGenericDao.getSomeData(validUser, "where id=" + "1237")).thenReturn(lista);
+
+		// primero debe ejecutarse la llamada al dao de autenticación
+		// despues el de  acceso a datos del sistema (la validaciones del orden en cada prueba)
+		InOrder ordered = inOrder(mockAuthDao, mockGenericDao);
+
+		// paramos el manager con los mock creados
+		SystemManager manager = new SystemManager(mockAuthDao, mockGenericDao);
+
+		// llamada al api a probar
+		Collection<Object> retorno = manager.startRemoteSystem(validUser.getId(), validId);
+		when(mockGenericDao.updateSomeData(validUser, retorno)).thenReturn(true);
+
+		manager.addRemoteSystem(validUser.getId(), retorno);
+		assertEquals(retorno.toString(), true);
+
+		// vemos si se ejecutan las llamadas a los dao, y en el orden correcto
+		ordered.verify(mockAuthDao).getAuthData(validUser.getId());
+		ordered.verify(mockGenericDao).getSomeData(validUser, "where id=" + validId);
+	}
+
+	@DisplayName("Test add usuario válido y no añade correctamente")
+	@Test
+	public void testaddRemoteSystemWithValidUserAndNoSystem() throws Exception {
+		User validUser = new User("1","Ana","Lopez","Madrid", new ArrayList<Object>(Arrays.asList(1, 2)));
+		when(mockAuthDao.getAuthData(validUser.getId())).thenReturn(validUser);
+
+		String validId = "12345"; // id valido de sistema
+		ArrayList<Object> lista = new ArrayList<>(Arrays.asList("uno", "dos"));
+		when(mockGenericDao.getSomeData(validUser, "where id=" + validId)).thenReturn(lista);
+
+		// primero debe ejecutarse la llamada al dao de autenticación
+		// despues el de  acceso a datos del sistema (la validaciones del orden en cada prueba)
+		InOrder ordered = inOrder(mockAuthDao, mockGenericDao);
+
+		// paramos el manager con los mock creados
+		SystemManager manager = new SystemManager(mockAuthDao, mockGenericDao);
+
+		// llamada al api a probar
+		Collection<Object> retorno = manager.startRemoteSystem(validUser.getId(), validId);
+		when(mockGenericDao.updateSomeData(validUser, retorno)).thenReturn(false);
+
+		assertThrows(SystemManagerException.class, () ->manager.addRemoteSystem(validUser.getId(), retorno));
+
+		// vemos si se ejecutan las llamadas a los dao, y en el orden correcto
+		ordered.verify(mockAuthDao).getAuthData(validUser.getId());
+		ordered.verify(mockGenericDao).getSomeData(validUser, "where id=" + validId);
+	}
+
+	@DisplayName("Test delete usuario válido y elimina correctamente")
+	@Test
+	public void testdeleteRemoteSystemWithValidUserAndSystem() throws Exception {
+		User validUser = new User("1","Ana","Lopez","Madrid", new ArrayList<Object>(Arrays.asList(1, 2)));
+		when(mockAuthDao.getAuthData(validUser.getId())).thenReturn(validUser);
+
+		String validId = "12345"; // id valido de sistema
+		ArrayList<Object> lista = new ArrayList<>(Arrays.asList("uno", "dos"));
+		when(mockGenericDao.getSomeData(validUser, "where id=" + "1237")).thenReturn(lista);
+
+		// primero debe ejecutarse la llamada al dao de autenticación
+		// despues el de  acceso a datos del sistema (la validaciones del orden en cada prueba)
+		InOrder ordered = inOrder(mockAuthDao, mockGenericDao);
+
+		// paramos el manager con los mock creados
+		SystemManager manager = new SystemManager(mockAuthDao, mockGenericDao);
+
+		// llamada al api a probar
+		when(mockGenericDao.deleteSomeData(validUser, validId)).thenReturn(true);
+
+		manager.deleteRemoteSystem(validUser.getId(), validId);
+		//assertEquals(, true);
+
+		// vemos si se ejecutan las llamadas a los dao, y en el orden correcto
+		ordered.verify(mockAuthDao).getAuthData(validUser.getId());
+		ordered.verify(mockGenericDao).getSomeData(validUser, "where id=" + validId);
+	}
+
+	@DisplayName("Test delete usuario válido y no elimina correctamente")
+	@Test
+	public void testdeleteRemoteSystemWithValidUserAndNoSystem() throws Exception {
+		User validUser = new User("1","Ana","Lopez","Madrid", new ArrayList<Object>(Arrays.asList(1, 2)));
+		when(mockAuthDao.getAuthData(validUser.getId())).thenReturn(validUser);
+
+		String validId = "12345"; // id valido de sistema
+		ArrayList<Object> lista = new ArrayList<>(Arrays.asList("uno", "dos"));
+		when(mockGenericDao.getSomeData(validUser, "where id=" + validId)).thenReturn(lista);
+
+		// primero debe ejecutarse la llamada al dao de autenticación
+		// despues el de  acceso a datos del sistema (la validaciones del orden en cada prueba)
+		InOrder ordered = inOrder(mockAuthDao, mockGenericDao);
+		// paramos el manager con los mock creados
+		SystemManager manager = new SystemManager(mockAuthDao, mockGenericDao);
+		// llamada al api a probar
+		when(mockGenericDao.deleteSomeData(validUser, validId)).thenReturn(false);
+
+		assertThrows(SystemManagerException.class, () ->manager.addRemoteSystem(validUser.getId(), validId));
+		// vemos si se ejecutan las llamadas a los dao, y en el orden correcto
+		ordered.verify(mockAuthDao).getAuthData(validUser.getId());
+		ordered.verify(mockGenericDao).getSomeData(validUser, "where id=" + validId);
+		ordered.verify(mockGenericDao).deleteSomeData(validUser,  validId);
 	}
 
 }

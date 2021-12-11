@@ -1,6 +1,6 @@
 package com.practica.integracion.DAO;
 
-public interface AuthDAO {
+public interface 	AuthDAO {
 
 	/**
 	 * Obtiene la información de autenticación
